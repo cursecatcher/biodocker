@@ -12,6 +12,16 @@ import tarfile
 import urllib.request
 
 
+class NoDatabaseException(Exception):
+    def __init__(self, db_name, assembly):
+        super().__init__("{} database doesn't provide annotation for {} assembly".format(db_name, assembly))
+
+class UnsupportedOrganism(Exception):
+    def __init__(self, assembly):
+        super().__init__("Unrecognized assembly: {}".format(assembly))
+
+
+
 class AssemblyVersion(enum.Enum):
     #human
     HG18 = "hg18"
@@ -24,6 +34,16 @@ class AssemblyVersion(enum.Enum):
     @classmethod
     def has_value(cls, val):
         return any(val == item.value for item in cls)
+    
+    @classmethod
+    def get_enum_value(cls, str_value):
+        if type(str_value) is str:
+            for enum_value in AssemblyVersion:
+                if enum_value.value == str_value:
+                    return enum_value
+        elif type(str_value) is AssemblyVersion:
+            return str_value
+        return None 
 
 
 class Organism(enum.Enum):
@@ -35,10 +55,11 @@ class Organism(enum.Enum):
     def get_organism_by_assembly(cls, v_assembly):
         """Return the organism associated to the given assembly version, if it is supported"""
 
-        for organism in Organism: 
-            if v_assembly in set(assembly.value for assembly in organism.value):
-                return organism 
-        raise Exception("Unrecognized assembly.")
+        organism = [o for o in Organism if v_assembly in o.value]
+
+        if len(organism) == 0:
+            raise UnsupportedOrganism(v_assembly)
+        return organism.pop()
 
     def __str__(self):
         return {Organism.HUMAN: "human", Organism.MOUSE: "mouse"}[self]
@@ -74,16 +95,13 @@ class circrnaDB(ABC):
     """ Abstract class implementing a generic circRNA database """ 
 
     def __init__(self, available_dbs, assembly):
-        self.__assembly = assembly
+        self.__assembly = AssemblyVersion.get_enum_value(assembly)
         self.__urls = available_dbs 
 
-        is_supported = self.is_assembly_supported(assembly)
-        if is_supported is None: 
-            raise Exception("The selected db doesn't provide data about the given organism.")
-        assembly_db, url = is_supported
+        assembly_db, url = self.is_assembly_supported(self.__assembly)
 
-        self.__url =  [url] if type(url) is str else url 
-        self.__lifter = Lifter(assembly, assembly_db)
+        self.__url =  url #[url] if type(url) is str else url 
+        self.__lifter = Lifter(self.__assembly.value, assembly_db.value)
 
         self.__header = None
         self.__path_db = list() 
@@ -92,7 +110,8 @@ class circrnaDB(ABC):
 
     def is_assembly_supported(self, my_assembly):
         """ Check if the organism associated to the given assembly has a db available """ 
-        best_candidate = None
+        my_assembly = AssemblyVersion.get_enum_value(my_assembly)
+        best = None
 
         if self.__urls is not None: 
             my_organism = Organism.get_organism_by_assembly(my_assembly)
@@ -101,12 +120,15 @@ class circrnaDB(ABC):
                 current_organism = Organism.get_organism_by_assembly(assembly)
 
                 if my_assembly == assembly:
-                    best_candidate = assembly, url 
+                    best = assembly, url 
                     break 
                 elif current_organism == my_organism:
-                    best_candidate = assembly, url 
+                    best = assembly, url 
 
-        return best_candidate  
+        if best is None:
+            raise NoDatabaseException("my_db", assembly)
+
+        return best  
 
     @abstractmethod
     def annotate(self, circset):
@@ -116,17 +138,16 @@ class circrnaDB(ABC):
         """ Download the database(s) from URL and save the file in the specified directory """
 
         for db_url in self.__url: 
-            print("downloading {}...".format(db_url))
             db_filename = os.path.join(dest, os.path.basename(db_url))
             #check if file has been already downloaded. Otherwise, it is downloaded now
             if not os.path.isfile(db_filename):
-                print("Downloading db file from {}...".format(db_filename))
+                print("Downloading db file from {} in {}...".format(db_url, db_filename))
                 response = urllib.request.urlopen(db_url)
                 #downloaded_data = response.read() 
                 with open(db_filename, "wb") as fdest:
                     fdest.write(response.read())
             #if downloaded file is an archive, it is extracted
-            if ".tar.gz" in db_filename: #TODO -> db_filename.endswith(".tar.gz") ??
+            if db_filename.endswith(".tar.gz"):#  ".tar.gz" in db_filename: #TODO -> db_filename.endswith(".tar.gz") ??
                 with tarfile.open(db_filename, "r:gz") as tar: 
                     content = tar.getmembers()[0].name 
                     db_filename = os.path.join(dest, content) 
@@ -183,8 +204,8 @@ class circrnaDB(ABC):
 class CircBaseDB(circrnaDB):
     def __init__(self, assembly):
         urls = {
-            AssemblyVersion.HG19.value: "http://www.circbase.org/download/hsa_hg19_circRNA.txt", 
-            AssemblyVersion.MM9.value: "http://www.circbase.org/download/mmu_mm9_circRNA.bed"
+            AssemblyVersion.HG19: ("http://www.circbase.org/download/hsa_hg19_circRNA.txt",), 
+            AssemblyVersion.MM9: ("http://www.circbase.org/download/mmu_mm9_circRNA.bed",)
         }
         super().__init__(urls, assembly)
 
@@ -203,16 +224,6 @@ class CircBaseDB(circrnaDB):
                 #mouse version 
                 header = "TODO" #TODO - add some header plz
                 indexes = 0, 1, 2, 4 
-
-                # for line in annotation_file:
-                #     chromo, start, end = line[:3]
-                #     chromo, start, end, strand, flag = self.lifter.convert_coordinate(chromo, start, end, line[4])
-                #     start += 1
-
-                #     if flag and circset.check_circ(chromo, start, end, strand):
-                #         circ = circRNA(chromo, start, end, strand)
-                #         self._annotations.append((circ, line[4:]))
-            
 
             for line in annotation_file:
                 chromo, start, end, strand = [line[index] for index in indexes]
@@ -238,18 +249,21 @@ class CircBaseDB(circrnaDB):
 class tscdDB(circrnaDB):
     def __init__(self, assembly):
         urls = {
-            AssemblyVersion.HG19.value: (
+            AssemblyVersion.HG19: (
                 "http://gb.whu.edu.cn/TSCD/download/hg19_adult_TS_circRNAs.tar.gz", 
                 "http://gb.whu.edu.cn/TSCD/download/hg19_fetal_TS_circRNAs.tar.gz"), 
-            AssemblyVersion.HG38.value: (
+            AssemblyVersion.HG38: (
                 "http://gb.whu.edu.cn/TSCD/download/hg38_adult_TS_circRNAs.tar.gz", 
-                "http://gb.whu.edu.cn/TSCD/download/hg38_fetal_TS_circRNAs.tar.gz")
+                "http://gb.whu.edu.cn/TSCD/download/hg38_fetal_TS_circRNAs.tar.gz"), 
+            AssemblyVersion.MM9: 
+                ("http://gb.whu.edu.cn/TSCD/download/mm9_adult_circRNA.tar.gz",), 
+            AssemblyVersion.MM10: 
+                ("http://gb.whu.edu.cn/TSCD/download/mm10_adult_circRNA.tar.gz",)
         }
         
         super().__init__(urls, assembly)
 
 
-#        super(tscdDB, self).save(output_folder, "tscd_{}.anno".format(self.__version))
     def annotate(self, circset):
         header = ["ID", "Sample_ID", "TSCD_version", "Junction", "Algorithm",
                     "BS_read", "Symbol", "CircRNA_type", "Region",
@@ -258,7 +272,7 @@ class tscdDB(circrnaDB):
 
         for path_db in self.path_db:
             with open(path_db, encoding="latin-1") as f:
-                tscd_version = "fetal" if "fetal" in path_db else "adult"
+                tscd_version = "fetal" if "fetal" in path_db.lower() else "adult"
 
                 for line in csv.reader(f, delimiter="\t"):
                     chromo, start, end = line[2:5]
@@ -282,13 +296,12 @@ class tscdDB(circrnaDB):
         super(tscdDB, self).save(output_folder, "tscd.anno")
         return self 
 
-
 class ExoRBaseDB(circrnaDB): 
     split_circrna_id_regex = re.compile(r"[:-]")
 
     def __init__(self, assembly):
         urls = {
-            AssemblyVersion.HG38.value: "http://www.exorbase.org/exoRBase/download/download?file=Samples_combined_circRNA_RPM.txt"
+            AssemblyVersion.HG38: ("http://www.exorbase.org/exoRBase/download/download?file=Samples_combined_circRNA_RPM.txt",)
         }
         super().__init__(urls, assembly)
 
@@ -323,6 +336,30 @@ class ExoRBaseDB(circrnaDB):
     def save(self, output_folder):
         super(ExoRBaseDB, self).save(output_folder, "exorbase.anno")
         return self 
+
+class CircRicDB(circrnaDB):
+    def __init__(self, assembly):
+        urls = {
+            AssemblyVersion.HG38: (
+                "https://hanlab.uth.edu/static/download/circRNA_expression.csv", 
+                "https://hanlab.uth.edu/static/download/RBPs_circRNA.csv", 
+                "https://hanlab.uth.edu/static/download/miRNA_circRNA.csv"
+            )
+        }
+        super().__init__(urls, assembly)
+    
+    def annotate(self, circset):
+        #Work in progress
+        pass 
+    
+    def download_db(self, output_folder):
+        super(CircRicDB, self).download_db(output_folder)
+        return self 
+
+    def save(self, output_folder):
+        super(CircRicDB, self).save(output_folder, "circric.anno")
+        return self 
+
 
 
 class circRNA(object):
