@@ -58,12 +58,13 @@ if __name__ == "__main__":
                     .download_db(args.scratch_folder)\
                         .annotate(circset)\
                             .save(output_folder)
+
             except circRNAannot.NoDatabaseException: 
                 assembly = circRNAannot.AssemblyVersion.get_enum_value(assembly)
                 organism = circRNAannot.Organism.get_organism_by_assembly(assembly)
-                print("\033[01;31mCannot annotate from {} db because it is not available for {} organism.\033[00m".format(db_name, organism))
+                print("\033[01;31mCannot annotate from {} db: it is not available for {} organism.\033[00m".format(db_name, organism))
             except Exception as e:
-                print("Some very random stuff happened: {}".format(e)) #TODO - provvisorio, fix 
+                print("Some very random event happened: {}".format(e)) #TODO - provvisorio, fix 
 
 
     #delete scratch folder content
