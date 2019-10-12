@@ -4,22 +4,44 @@ import argparse
 import csv 
 import enum 
 import os, sys 
+from circutils import * 
+
+
+class ToolParameters(object):
+    def __init__(self):
+        #TODO - complete headers 
+        self.__parameters = {
+            SupportedTool.ACFS:
+                (None, (0, 1, 2, 5)), 
+            SupportedTool.CIRI:
+                (["circRNA_ID", "chr", "circRNA_start", "circRNA_end", "#junction_reads", 
+                "SM_MS_SMS", "#non_junction_reads", "junction_reads_ratio", "circRNA_type", 
+                "gene_id", "junction_reads_ID"], 
+                (1, 2, 3, -1)), 
+            SupportedTool.CIRI2:
+                (["circRNA_ID", "chr", "circRNA_start", "circRNA_end", "#junction_reads", "SM_MS_SMS",
+                "#non_junction_reads", "junction_reads_ratio",	"circRNA_type", "gene_id", "strand", "junction_reads_ID"], 
+                (1, 2, 3, 10)), 
+            SupportedTool.CIRCEXPLORER:
+                (["chrom", "start", "end", "name", "score", "strand", "thickStart", "thickEnd", 
+                "itemRgb", "exonCount", "exonSizes", "exonOffsets", "readNumber", "circType", 
+                "geneName", "isoformName", "exonIndex/intronIndex", "flankIntron"], 
+                (0, 1, 2, 5)), 
+            SupportedTool.CIRCEXPLORER2:
+                (None, (0, 1, 2, 5)), 
+            # SupportedTool.STARCHIP: ([], ()), 
+            SupportedTool.UROBORUS:
+                (None,  (0, 1, 2, 3))
+        }
+
+    def __getitem__(self, key):
+        return self.__parameters[key]
+
 
 # This script reformats the output files produced by various circRNA detector tools
 # in order to obtain a common format for further analysis. 
 # The output file will be saved in the same directory of the input file. 
 # The output file extension will contain the information regarding the tool used to detect the circRNAs. 
-
-class SupportedTools(enum.Enum):
-    ACFS = "acfs"
-    CIRI = "ciri"
-    CIRI2 = "ciri2"
-    STARCHIP = "starchip"
-    CIRCEXPLORER = "circexplorer"
-    CIRCEXPLORER2 = "circexplorer2"
-    UROBORUS = "uroborus"
-    #TODO - eheh
-
 
 def check_chromosome(chr_value):
     """Reformat the chromosome value. Return a string in the format chrN  """
@@ -41,9 +63,11 @@ def check_strand(strand_value):
     return strand
 
 
-def reformat(filename, expected_header, chr_index, start_index, end_index, strand_index):
+def reformat(filename, expected_header, indexes):
     """ This function is a generator: it reformats the input file one line at the time, 
     yielding the formatted version of current line. """ 
+
+    chr_index, start_index, end_index, strand_index = indexes 
 
     with open(filename) as fi:
         circsv = csv.reader(fi, delimiter="\t")   
@@ -71,55 +95,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--in", dest="input_file", action="store", required=True)
     parser.add_argument("-o", "--out", dest="output_path", action="store", required=True)
-    parser.add_argument("-t", "--tool", dest="used_tool", action="store", required=True, choices=[tool.value for tool in SupportedTools])
+    parser.add_argument("-t", "--tool", dest="used_tool", action="store", required=True, choices=[tool.value for tool in SupportedTool])
 
     args = parser.parse_args()
+    used_tool = SupportedTool.get_enum(args.used_tool)
 
-    header = None 
-    ichr, istart, iend, istrand = None, None, None, None 
-
-    if args.used_tool == SupportedTools.ACFS.value: 
-        header = None #TODO 
-        ichr, istart, iend, istrand = 0, 1, 2, 5
-
-    if args.used_tool == SupportedTools.CIRI.value:
-        header = [
-            "circRNA_ID", "chr", "circRNA_start", "circRNA_end", 
-            "#junction_reads", "SM_MS_SMS", "#non_junction_reads", "junction_reads_ratio", 
-            "circRNA_type", "gene_id", "junction_reads_ID"
-        ]
-        ichr, istart, iend, istrand = 1, 2, 3, -1 
-
-    elif args.used_tool == SupportedTools.CIRI2.value:
-        header = [
-            "circRNA_ID", "chr", "circRNA_start", "circRNA_end",	
-            "#junction_reads", "SM_MS_SMS",	"#non_junction_reads",
-            "junction_reads_ratio",	"circRNA_type", "gene_id", "strand", "junction_reads_ID"]
-        ichr, istart, iend, istrand = 1, 2, 3, 10
-
-    elif args.used_tool == SupportedTools.CIRCEXPLORER.value:
-        header = [
-            "chrom", "start", "end", "name", "score", 
-            "strand", "thickStart", "thickEnd", "itemRgb", "exonCount", 	
-            "exonSizes", "exonOffsets", "readNumber", "circType", "geneName", "isoformName", 
-            "exonIndex/intronIndex", "flankIntron"]
-
-        ichr, istart, iend, istrand = 0, 1, 2, 5 
-    
-    elif args.used_tool == SupportedTools.CIRCEXPLORER2.value: 
-        header = None #TODO  
-        ichr, istart, iend, istrand = 0, 1, 2, 5
-
-    elif args.used_tool == SupportedTools.STARCHIP.value:
-#        header = ["????"]
-        sys.exit("We still have to implement this stuff. Please be patient. ")
-    
-    elif args.used_tool == SupportedTools.UROBORUS.value: 
-        header = None #TODO 
-        ichr, istart, iend, istrand = 0, 1, 2, 3 
-
-    else: 
-        sys.exit("Seems that {} tool is not supported yet".format(args.used_tool))
+    if used_tool not in SupportedTool:
+        sys.exit("Seems that the tool {} is not supported yet.".format(args.used_tool))
 
     filenamepath, extension = os.path.splitext(args.input_file)
     filename = os.path.basename(filenamepath)
@@ -127,8 +109,9 @@ if __name__ == "__main__":
 
     with open(output_file, "w") as fo: 
         csvw = csv.writer(fo, delimiter="\t")
+        header, indexes = ToolParameters()[used_tool]
 
-        for line in reformat(args.input_file, header, ichr, istart, iend, istrand):
+        for line in reformat(args.input_file, header, indexes):
             csvw.writerow(line)
     
 
