@@ -9,15 +9,17 @@ import shutil
 import subprocess
 import sys
 
+import circutils
+
+
 class Commands(enum.Enum):
     merge_data = "merge_data"
     merge = "merge"
     annotation = "annotation"
     structure = "structure"
     ciri2 = "ciri2"
-#TODO - add new commands
-#    reformat = "reformat"
-#    overlap = "overlap"
+    reformat = "reformat"
+    overlap = "overlap"
 
 
 class Scripts(enum.Enum):
@@ -44,6 +46,8 @@ class Paths(enum.Enum):
     annotation = "/data/annotation"
     #input folder containing samples to merge (ciri_merge and merge_data procedures)
     folder_to_merge = "/data/input_merge"
+    #generic input file/folder 
+    input_path = "/data/input"
 
 class OutputFiles(enum.Enum):
     ciri_merge = "merged_circRNA"
@@ -92,6 +96,13 @@ if __name__ == "__main__":
     ciri2.add_argument("-U", "--mapq_uni", dest="quality_threshold", type=int, default=10)
     ciri2.add_argument("--strigency", dest="strigency", choices=["high", "low", "zero"], default="high")
     ciri2.add_argument("-a", "--anno", dest="annotation", action="store_true")
+
+    reformat = subparsers.add_parser(Commands.reformat.value)
+    reformat.add_argument("-t", "--tool", dest="used_tool", action="store", type=str, choices=[x.value for x in circutils.SupportedTool], required=True)
+
+    overlap = subparsers.add_parser(Commands.overlap.value)
+    overlap.add_argument("-t", "--threshold", dest="min_support", action="store", default=1, type=int)
+
 
     args = parser.parse_args()
 
@@ -194,12 +205,32 @@ if __name__ == "__main__":
             extension = getAnnotationExtension(Paths.annotation.value)
             command.append("--anno {}.{}".format(Paths.annotation.value, extension))
 
+    elif mode == Commands.reformat.value:
+        command = [
+            "python3", Scripts.reformat.value, 
+            "--in {}".format(Paths.input_path.value), 
+            "--out {}".format(Paths.output_folder.value), 
+            "--tool {}".format(args.used_tool)
+        ]
+    
+    elif mode == Commands.overlap.value: 
+        #obtaining all the files contained in the input folder 
+        files_list = [f.path for f in os.scandir(Paths.input_path.value)]
+        formatted_files_list = ("{} " * len(files_list)).format(*files_list)
+
+        command = [
+            "python3", Scripts.overlap.value, 
+            "--in {}".format(formatted_files_list), 
+            "--out {}".format(Paths.output_folder.value), 
+            "--threshold {}".format(args.min_support)
+        ]
+
     #execute task
+    print("Ready to run {} task.".format(mode))
     ret = subprocess.run(" ".join(command), shell=True)
 
     #remove scratch folder
     if ret.returncode == 0:
-        
         print("Removing scratch folder")
         shutil.rmtree(my_scratch)
 
