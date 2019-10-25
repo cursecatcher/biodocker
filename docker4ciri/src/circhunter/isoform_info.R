@@ -2,7 +2,7 @@
 
 library(biomaRt)
 
-get_isoform <- function(assembly) {
+get_isoform <- function(assembly, version) {
     cat("\nDownloading isoform data")
 
     # Choosing the right dataset
@@ -20,12 +20,37 @@ get_isoform <- function(assembly) {
         my_genome <- useEnsembl(
             biomart="ensembl",
             dataset="hsapiens_gene_ensembl",
-            GRCh = 37)
+            GRCh = 37, version=version)
 
     } else if (assembly == "hg38"){
 
         my_genome <- useEnsembl(biomart="ensembl",
-            dataset="hsapiens_gene_ensembl")
+            dataset="hsapiens_gene_ensembl", version=version)
+
+    }  else if (assembly == "mm9"){
+
+        my_genome <- useEnsembl(biomart="ensembl",
+            dataset="mmusculus_gene_ensembl", version=67)
+
+    } else if (assembly == "mm10"){
+
+        my_genome <- useEnsembl(biomart="ensembl",
+            dataset="mmusculus_gene_ensembl", version=version)
+
+    } else if (assembly == "ce11"){
+
+        my_genome <- useEnsembl(biomart="ensembl",
+            dataset="celegans_gene_ensembl", version=version)
+
+    } else if (assembly == "dm6"){
+
+        my_genome <- useEnsembl(biomart="ensembl",
+            dataset="dmelanogaster_gene_ensembl", version=version)
+
+    } else if (assembly == "rn6"){
+
+        my_genome <- useEnsembl(biomart="ensembl",
+            dataset="rnorvegicus_gene_ensembl", version=version)
 
     }
 
@@ -33,8 +58,8 @@ get_isoform <- function(assembly) {
 }
 
 
-get_isoform_data <- function(data.folder, assembly) {
-	my_genome <- get_isoform(assembly)
+get_isoform_data <- function(data.folder, assembly, version) {
+	my_genome <- get_isoform(assembly, version)
 
     attributes <- c("ensembl_gene_id", "ensembl_transcript_id", "chromosome_name" , "external_transcript_name")
     if (assembly == "hg18") {

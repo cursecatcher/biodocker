@@ -16,12 +16,23 @@ library(BSgenome)
 # Function used to load correct genome
 installer <- function(assembly) {
 	# Checking required genome assembly
-	if (assembly %in% c("hg19", "hg18", "hg38") == FALSE) {
+	if (assembly %in% c("hg19", "hg18", "hg38", "mm9", "mm10", "ce11", "rn6", "dm6") == FALSE) {
 		cat("WARNING: Invalid genome assembly\n")
 		quit(save="no")
 	}
 
-	selectedgenome <- paste("BSgenome.Hsapiens.UCSC", assembly, sep=".")
+	if(assembly %in% c("hg19", "hg18", "hg38") {
+		selectedgenome <- paste("BSgenome.Hsapiens.UCSC", assembly, sep=".")
+	} else if(assembly %in% c("mm9", "mm10") {
+		selectedgenome <- paste("BSgenome.Mmusculus.UCSC", assembly, sep=".")
+	}  else if(assembly == "ce11") {
+		selectedgenome <- paste("BSgenome.Celegans.UCSC.ce11", sep=".")
+	}  else if(assembly == "rn6") {
+		selectedgenome <- paste("BSgenome.Rnorvegicus.UCSC.rn6", sep=".")	
+	}  else if(assembly == "dm6") {
+		selectedgenome <- paste("BSgenome.Dmelanogaster.UCSC.dm6", sep=".")	
+	}
+
 
 	if (selectedgenome %in% rownames(installed.packages()) == FALSE) {
 		source("https://bioconductor.org/biocLite.R")

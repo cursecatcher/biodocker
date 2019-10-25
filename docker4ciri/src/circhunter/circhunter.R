@@ -39,8 +39,19 @@ if ("-as" %in% (args) | "--assembly" %in% (args)) {
     argtouse <- ifelse("-as" %in% args, match("-as", args), match("--assembly", args))
 	assembly <- args[argtouse + 1]
 }
-if (assembly %in% c("hg18", "hg19", "hg38") == FALSE) {
-    writeLines("Please enter a valid genome assembly (hg18, hg19 or hg38).")
+if (assembly %in% c("hg18", "hg19", "hg38", "mm9", "mm10", "ce11", "dm6", "rn6") == FALSE) {
+    writeLines("Please enter a valid genome assembly (hg18, hg19, hg38, mm9, mm10, ce11, dm6, rn6).")
+	quit(save="no")
+}
+
+# Checking required Ensembl version and assessing validity
+version <- "NULL"
+if ("-v" %in% (args) | "--version" %in% (args)) {
+    argtouse <- ifelse("-v" %in% args, match("-v", args), match("--version", args))
+	version <- args[argtouse + 1]
+}
+if (version %in% c(67,75,77, 79:98) || version > 98 == FALSE) {
+    writeLines("Please enter a valid Ensembl version.")
 	quit(save="no")
 }
 
@@ -50,10 +61,10 @@ if ("-f" %in% (args) | "--full" %in% (args) |
     writeLines("Preparing isoform and exon data.")
 
     writeLines("Downloading exon data...")
-    get_exon_data(my_scratch, assembly)
+    get_exon_data(my_scratch, assembly, version)
 
     writeLines("Downloading isoform data...")
-    get_isoform_data(my_scratch, assembly)
+    get_isoform_data(my_scratch, assembly, version)
 
     writeLines("Downloads completed.")
 }
@@ -68,7 +79,7 @@ if ("-f" %in% (args) | "--full" %in% (args) |
     # Checks if a biomart export was supplied with -sg
     if (("-sg" %in% (args) | "--suppliedgenome" %in% (args)) == FALSE) {
         writeLines("Downloading exon data...")
-        get_exon_data(my_scratch, assembly)
+        get_exon_data(my_scratch, assembly, version)
     }
     circRNA_classification(my_scratch, path_exondata, path_circrna)
 	writeLines("-- Classification completed --")
@@ -80,7 +91,7 @@ if ("-f" %in% (args) | "--full" %in% (args) |
     writeLines("Main isoform circRNA classification in progress")
     if(("-id" %in% (args) | "--isoformdata" %in% (args)) == FALSE) {
         writeLines("Downloading isoform data\n")
-        get_isoform_data(my_scratch, assembly)
+        get_isoform_data(my_scratch, assembly, version)
     }
     isoform(my_scratch, path_isoformdata)
     writeLines("-- Main isoform classification obtained --")

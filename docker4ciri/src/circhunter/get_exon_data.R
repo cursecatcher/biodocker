@@ -3,7 +3,7 @@
 
 library(biomaRt)
 
-get_genome <- function(assembly) {
+get_genome <- function(assembly, version) {
 	# Choosing the right dataset
 	if (assembly == "hg18"){
 		my_genome <- useMart(
@@ -12,17 +12,27 @@ get_genome <- function(assembly) {
 			archive=FALSE
 		)
 	} else if (assembly == "hg19") {
-		my_genome <- useEnsembl(biomart="ensembl", dataset="hsapiens_gene_ensembl", GRCh=37)
-	} else if (assembly == "hg38"){
-		my_genome <- useEnsembl(biomart="ensembl", dataset="hsapiens_gene_ensembl")
+		my_genome <- useEnsembl(biomart="ensembl", dataset="hsapiens_gene_ensembl", GRCh=37, version=version)
+	} else if (assembly == "hg38") {
+		my_genome <- useEnsembl(biomart="ensembl", dataset="hsapiens_gene_ensembl", version=version)
+	} else if (assembly == "mm9") {
+		my_genome <- useEnsembl(biomart="ensembl", dataset="mmusculus_gene_ensembl", version=67)		
+	} else if (assembly == "mm10") {
+		my_genome <- useEnsembl(biomart="ensembl", dataset="mmusculus_gene_ensembl", version=version)
+	} else if (assembly == "ce11") {
+		my_genome <- useEnsembl(biomart="ensembl", dataset="celegans_gene_ensembl", version=version)
+	} else if (assembly == "dm6") {
+		my_genome <- useEnsembl(biomart="ensembl", dataset="dmelanogaster_gene_ensembl", version=version)
+	} else if (assembly == "rn6") {
+		my_genome <- useEnsembl(biomart="ensembl", dataset="rnorvegicus_gene_ensembl", version=version)
 	}
 
 	return (my_genome)
 }
 
-get_exon_data <- function(data.folder, assembly) {
+get_exon_data <- function(data.folder, assembly, version) {
 
-	my_genome <- get_genome(assembly)
+	my_genome <- get_genome(assembly, version)
 
 	my_attributes <- c(
 		"ensembl_gene_id", "ensembl_transcript_id", "ensembl_exon_id",
