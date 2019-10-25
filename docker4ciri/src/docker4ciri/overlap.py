@@ -4,7 +4,7 @@ import argparse
 import csv 
 import os 
 
-# This script calculates the overlap between two or more files containing circRNA stuff
+# This script calculates the overlap between two or more files containing circRNA data
 #TODO - continuare questa bellissima descrizione 
 
 def get_tool_from_filename(filename):

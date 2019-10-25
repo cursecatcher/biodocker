@@ -34,7 +34,6 @@ class circrnaDB(ABC):
         self.__path_db = list() 
         self._annotations = list()
 
-
     def is_assembly_supported(self, my_assembly):
         """ Check if the organism associated to the given assembly has a db available """ 
         my_assembly = AssemblyVersion.get_enum_value(my_assembly)
@@ -276,8 +275,25 @@ class CircRicDB(circrnaDB):
         super().__init__(urls, assembly)
     
     def annotate(self, circset):
-        #Work in progress
-        pass 
+        for path_db in self.path_db:
+            with open(path_db) as f: 
+                csvf = csv.reader(f)
+
+                header = next(csvf, None)
+
+                for line in csvf: 
+                    circ, first_field = line[0].split("|")
+                    chrm, start, end = circ.split("_")
+                                       
+                    
+                    for strand in ("+", "-"):
+                        _chrm, _start, _end, _strand, flag = self.lifter.convert_coordinates(chrm, start, end, strand)
+                    #    _start += 1
+                        if flag and circset.check_circ(_chrm, _start, _end, _strand):
+                            print("Triggered, strand={}".format(strand))
+
+
+        return self
     
     def download_db(self, output_folder):
         super(CircRicDB, self).download_db(output_folder)
@@ -286,6 +302,150 @@ class CircRicDB(circrnaDB):
     def save(self, output_folder):
         super(CircRicDB, self).save(output_folder, "circric.anno")
         return self 
+
+class CircFunBaseDB(circrnaDB): 
+    split_circrna_id_regex = re.compile(r"[:-]")
+
+    def __init__(self, assembly):
+        urls = {
+            AssemblyVersion.HG19: ("http://bis.zju.edu.cn/CircFunBase/assets//Data/download/Homo_sapiens_circ.txt",),
+            AssemblyVersion.MM9: ("http://bis.zju.edu.cn/CircFunBase/assets//Data/download/Mus_musculus_circ.txt",)             
+        }
+        super().__init__(urls, assembly)
+ 
+    def annotate(self, circset):
+        with open(self.path_db[0]) as f: 
+            annotation_file = csv.reader(f, delimiter="\t")
+            header = next(annotation_file)
+
+            self._annotations.append((None, ["id", header[0]] + header[2:])) #TODO - 
+            
+            for line in annotation_file: 
+                #example: chrY:13854443-13871798:+
+                tokens = CircFunBaseDB.split_circrna_id_regex.split(line[1])
+                
+                try:
+                    #there are some random cases where the circRNA coordinates are missing...
+                    chr, start, end = tokens
+                except ValueError:
+                    continue 
+                
+                strand = "+" ### strand not available
+                other_fields = line[2:]
+
+                chr, start, end, strand, flag = self.lifter.convert_coordinates(chr, start, end, strand)
+                start += 1 
+
+                if flag and circset.check_circ(chr, start, end, strand):
+                    circ = circRNA(chr, start, end, strand)
+                    self._annotations.append((circ, other_fields))              
+        
+        return self
+            
+    def download_db(self, output_folder):
+        super(CircFunBaseDB, self).download_db(output_folder)
+        return self 
+
+    def save(self, output_folder):
+        super(CircFunBaseDB, self).save(output_folder, "CircFunBase.anno")
+        return self
+
+class Circ2DiseaseDB(circrnaDB): 
+    def __init__(self, assembly):
+        urls = {
+            AssemblyVersion.HG19: ("http://bioinformatics.zju.edu.cn/Circ2Disease/Data/Data/circ2disease_association.txt",)
+        }
+        super().__init__(urls, assembly)
+ 
+    def annotate(self, circset):
+        with open(self.path_db[0], encoding="latin-1") as f: 
+            annotation_file = csv.reader(f, delimiter="\t")
+            header = ["id", "CircRNA name", "Synonyms", "Genome version", "Gene Symbol", "Sequence", "Type",
+                    "Disease name", "Methods", "Sample", "Location", "Expression pattern", 
+                    "miRNA validate", "miRNA target validate", "RBP validated", "RBP Target Validated",
+                    "Functional Description", "PubMed ID", "Year", "Journal", "Title", "Note"]
+
+            self._annotations.append((None, header))
+
+            for line in annotation_file: 
+                #example: 12\t50848096-50855130\t+
+                chromo = "chr{}".format(line[2])
+                try:
+                    #some coordinates are missing
+                    start, end =  line[3].split("-")
+                except ValueError:
+                    continue
+                strand = line[4]
+                other_fields = [line[0:2]] + line[5:]
+
+                chromo, start, end, strand, flag = self.lifter.convert_coordinates(chr, start, end, strand)
+                start += 1 
+
+                if flag and circset.check_circ(chromo, start, end, strand):
+                    circ = circRNA(chromo, start, end, strand)
+                    self._annotations.append((circ, other_fields))              
+        
+        return self
+            
+    def download_db(self, output_folder):
+        super(Circ2DiseaseDB, self).download_db(output_folder)
+        return self 
+
+    def save(self, output_folder):
+        super(Circ2DiseaseDB, self).save(output_folder, "Circ2Disease.anno")
+        return self
+
+
+class CSCDDB(circrnaDB): 
+    split_circrna_id_regex = re.compile(r"[:-]")
+
+    def __init__(self, assembly):
+        urls = {
+            AssemblyVersion.HG38: ("http://gb.whu.edu.cn/CSCD2/public/static/download/hg38-cancer-circrna.tar.gz",
+            "http://gb.whu.edu.cn/CSCD2/public/static/download/hg38-normal-circrna.tar.gz",
+            "http://gb.whu.edu.cn/CSCD2/public/static/download/hg38-common-circrna.tar.gz")
+        }
+        super().__init__(urls, assembly)
+ 
+
+    def annotate(self, circset):		
+        header = ["id", "Gene", "Type", "CircRNA ID", "UCSC", "Sample source", "Constitution", 
+		"Gene Type", "Average SRPTM (log2)", "-", "Subcellular location", "Algorithm", "Reads counts", 
+		"SRPTM (log2)", "Authors", "MiOncoCirc", "Cancer Type"]
+        
+        self._annotations.append((None, header))
+		
+        for path_db in self.path_db:
+            with open(path_db, encoding="latin-1") as f:
+
+                for v in ("cancer", "normal", "common"):
+                    if v in path_db:
+                        cscd_version = v 
+                        break
+
+                for line in csv.reader(f, delimiter="\t"): 
+                    chr, start, end = line[-3:]
+                    strand = "+"
+                    other_fields = [line[0:-3]]
+
+                    chr, start, end, strand, flag = self.lifter.convert_coordinates(chr, start, end, strand)
+                    start += 1 
+
+                    if flag and circset.check_circ(chr, start, end, strand):
+                        circ = circRNA(chr, start, end, strand)
+                        self._annotations.append((circ, other_fields, cscd_version))              
+        
+        return self
+            
+    def download_db(self, output_folder):
+        super(CSCDDB, self).download_db(output_folder)
+        return self 
+
+    def save(self, output_folder):
+        super(CSCDDB, self).save(output_folder, "CSCD.anno")
+        return self 
+
+
 
 
 

@@ -12,7 +12,8 @@ class ToolParameters(object):
         #TODO - complete headers 
         self.__parameters = {
             SupportedTool.ACFS:
-                (None, (0, 1, 2, 5)), 
+                (None, 
+                (0, 1, 2, 5)), 
             SupportedTool.CIRI:
                 (["circRNA_ID", "chr", "circRNA_start", "circRNA_end", "#junction_reads", 
                 "SM_MS_SMS", "#non_junction_reads", "junction_reads_ratio", "circRNA_type", 
@@ -28,10 +29,28 @@ class ToolParameters(object):
                 "geneName", "isoformName", "exonIndex/intronIndex", "flankIntron"], 
                 (0, 1, 2, 5)), 
             SupportedTool.CIRCEXPLORER2:
-                (None, (0, 1, 2, 5)), 
-            # SupportedTool.STARCHIP: ([], ()), 
+                (None, 
+                (0, 1, 2, 5)), 
+            SupportedTool.STARCHIP: 
+                (["cRNA","P1GeneInfo","P1Strand","P1GeneDistance","P2GeneInfo", "P2Strand", "P2GeneDistance"], 
+                (0, -1, -1, 2)), #cRNA field contains chromosome, start and end information
             SupportedTool.UROBORUS:
-                (None,  (0, 1, 2, 3))
+                (None,  
+                (0, 1, 2, 3)), 
+            SupportedTool.CIRCRNAFINDER: 
+                (["chr", "start", "end", "name", "score", "strand"], 
+				(0, 1, 2, 5)),
+            SupportedTool.FINDCIRC2:
+                (["chrom", "start", "end", "name", "n_reads", "strand", "n_uniq", "uniq_bridges", "best_qual_left",
+				"best_qual_right ", "tissue", "tiss_counts", "edits", "anchor_overlap", "breakpoints", "signal", "strandmatch", "category"],  
+				(0, 1, 2, 5)),
+            SupportedTool.KNIFE:
+                #field #0 contains the whole circRNA coordinate: chr15|RPS17:82823288|RPS17L:83207122|rev|- 
+                (["junction", "orig_count", "orig_posterior", "swapped_count", "swapped_posterior", "total_reads"],  
+				(0,-1, -1, -1)),
+            SupportedTool.DCC: 
+                (["chr", "start", "end", "genename", "junctiontype", "strand", "circRNA region", "overall regions"],
+				(0,1,2,5))   
         }
 
     def __getitem__(self, key):
@@ -62,25 +81,42 @@ def check_strand(strand_value):
 
     return strand
 
+def process_line(line, indexes, tool):
+    """ Return a 4-tuple containing the info about chromosome, start and end indexes and strand info, if it present """
 
-def reformat(filename, expected_header, indexes):
+    if tool == SupportedTool.KNIFE:
+        #special case #1: all the info are in the same field 
+        #e.g. : chr13|DNAJC3:96377506|DNAJC3:96375496|rev|+
+        index = indexes[0]
+        return tuple(
+            token if ":" not in token else token.split(":")[1]  
+            for i, token in enumerate(line[index].split("|")) if i != 3) #do not keep field #3 -> "rev" string 
+
+    elif tool == SupportedTool.STARCHIP:
+        #special case #2: chromosome info and start/end indexes are in the same field,
+        #while the strand info has a dedicated field
+        #e.g. : chr10:103622470-103661114
+        chromo, coordinates = line[indexes[0]].split(":")
+        start, end = coordinates.split("-")
+        strand = line[indexes[-1]]
+        return chromo, start, end, strand 
+    else:
+        return tuple(line[index] if index >= 0 else 1 for index in indexes)
+
+def reformat(filename, expected_header, indexes, tool):
     """ This function is a generator: it reformats the input file one line at the time, 
     yielding the formatted version of current line. """ 
-
-    chr_index, start_index, end_index, strand_index = indexes 
 
     with open(filename) as fi:
         circsv = csv.reader(fi, delimiter="\t")   
         actual_header = next(circsv, None)
 
         if expected_header is not None and actual_header != expected_header:
-            sys.exit("The actual header does not match the expected one. Check if you have selected the right tool.")
-
-        indexes = [chr_index, start_index, end_index, strand_index] 
+            sys.exit("The actual header does not match the expected one. Check if you have selected the right tool and/or input file.")
 
         for line in circsv:
             #extract fields from line 
-            chr, begin, end, strand = [line[index] if index >= 0 else 1 for index in indexes]
+            chr, begin, end, strand = process_line(line, indexes, tool)
             #standardize some stuff 
             chr = check_chromosome(chr) 
             strand = check_strand(strand) 
@@ -111,7 +147,7 @@ if __name__ == "__main__":
         csvw = csv.writer(fo, delimiter="\t")
         header, indexes = ToolParameters()[used_tool]
 
-        for line in reformat(args.input_file, header, indexes):
+        for line in reformat(args.input_file, header, indexes, used_tool):
             csvw.writerow(line)
     
 

@@ -40,7 +40,11 @@ class SupportedTool(enum.Enum):
     CIRCEXPLORER = "circexplorer"
     CIRCEXPLORER2 = "circexplorer2"
     UROBORUS = "uroborus"
-    #TODO - eheh
+    CIRCRNAFINDER = "circrnafinder"
+    FINDCIRC2 = "findcirc2"
+    KNIFE = "knife"
+    DCC = "dcc"
+    
 
     @classmethod
     def get_enum(cls, str_value):

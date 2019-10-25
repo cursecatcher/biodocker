@@ -15,6 +15,9 @@ class Commands(enum.Enum):
     annotation = "annotation"
     structure = "structure"
     ciri2 = "ciri2"
+#TODO - add new commands
+#    reformat = "reformat"
+#    overlap = "overlap"
 
 
 class Scripts(enum.Enum):
@@ -23,6 +26,8 @@ class Scripts(enum.Enum):
     annotation = "/ciri2/annotate_circrna.py"
     ciri_merge = "/ciri2/merge_v2.py"
     data_merge = "/ciri2/deseq_merge.py"
+    reformat = "/ciri2/reformat.py"
+    overlap = "/ciri2/overlap.py"
 
 class Paths(enum.Enum):
     #main scratch folder: a subfolder will be created for each execution
@@ -75,8 +80,8 @@ if __name__ == "__main__":
     merge.add_argument("--avg", dest="min_average", type=int, required=True)
 
     annotation = subparsers.add_parser(Commands.annotation.value)
-    annotation.add_argument("-s", "--sources", dest="annotation_sources", nargs="*", required=True)
-    annotation.add_argument("-v", "--version", dest="assembly_version", type=str, default="hg19")
+    annotation.add_argument("-s", "--sources", dest="annotation_sources", nargs="*")
+    annotation.add_argument("-v", "--version", dest="assembly_version", type=str, required=True)
 
     ciri_as = subparsers.add_parser(Commands.structure.value)
     ciri_as.add_argument("-a", "--anno", dest="annotation", action="store_true")
@@ -100,7 +105,7 @@ if __name__ == "__main__":
     #################################################
     #local scratch folder creation
     #################################################
-    scratch_id = re.sub("[:\.\ ]", "-", str(datetime.datetime.now()))
+    scratch_id = re.sub(r"[:\.\ ]", "-", str(datetime.datetime.now()))
     my_scratch = "{}/{}".format(Paths.scratch_folder.value, scratch_id)
 
     try:

@@ -6,13 +6,16 @@ import csv
 import os, os.path as path
 import circRNAannot
 import enum
-
+import traceback
 
 class AnnotationSources(enum.Enum):
     CIRCBASE = ("circbase", circRNAannot.CircBaseDB)
     TSCD = ("tscd", circRNAannot.tscdDB)
     EXORBASE = ("exorbase", circRNAannot.ExoRBaseDB)
     CIRCRIC = ("circric", circRNAannot.CircRicDB)
+    CSCD = ("cscd", circRNAannot.CSCDDB)
+    CIRC2DISEASE = ("circ2disease", circRNAannot.Circ2DiseaseDB)
+    CIRCFUNBASE = ("circfunbase", circRNAannot.CircFunBaseDB)
 
 
 if __name__ == "__main__":
@@ -65,6 +68,9 @@ if __name__ == "__main__":
                 print("\033[01;31mCannot annotate from {} db: it is not available for {} organism.\033[00m".format(db_name, organism))
             except Exception as e:
                 print("Some very random event happened: {}".format(e)) #TODO - provvisorio, fix 
+                print("###########################")
+                traceback.print_exc()
+                print("###########################")
 
 
     #delete scratch folder content
