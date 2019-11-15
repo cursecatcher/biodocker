@@ -129,7 +129,7 @@ def reformat(filename, expected_header, indexes, tool):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--in", dest="input_file", action="store", required=True)
+    parser.add_argument("-i", "--in", dest="input_path", action="store", required=True)
     parser.add_argument("-o", "--out", dest="output_path", action="store", required=True)
     parser.add_argument("-t", "--tool", dest="used_tool", action="store", required=True, choices=[tool.value for tool in SupportedTool])
 
@@ -139,15 +139,35 @@ if __name__ == "__main__":
     if used_tool not in SupportedTool:
         sys.exit("Seems that the tool {} is not supported yet.".format(args.used_tool))
 
-    filenamepath, extension = os.path.splitext(args.input_file)
-    filename = os.path.basename(filenamepath)
-    output_file = os.path.join(args.output_path, "{}.{}.circrna".format(filename, args.used_tool))
+    for current_file in os.listdir(args.input_path):
+        print("Reformatting {}".format(current_file))
 
-    with open(output_file, "w") as fo: 
-        csvw = csv.writer(fo, delimiter="\t")
-        header, indexes = ToolParameters()[used_tool]
+        current_file_path = os.path.join(args.input_path, current_file)
+        filenamepath, extension = os.path.splitext(current_file_path)
+        filename = os.path.basename(filenamepath)
+        output_file = os.path.join(args.output_path, "{}.{}.circrna".format(filename, args.used_tool))
 
-        for line in reformat(args.input_file, header, indexes, used_tool):
-            csvw.writerow(line)
-    
+        with open(output_file, "w") as fo: 
+            csvw = csv.writer(fo, delimiter="\t")
+            header, indexes = ToolParameters()[used_tool]
+
+            for line in reformat(current_file_path, header, indexes, used_tool):
+                csvw.writerow(line)
+
+
+
+
+
+    if False: 
+        filenamepath, extension = os.path.splitext(args.input_file)
+        filename = os.path.basename(filenamepath)
+        output_file = os.path.join(args.output_path, "{}.{}.circrna".format(filename, args.used_tool))
+
+        with open(output_file, "w") as fo: 
+            csvw = csv.writer(fo, delimiter="\t")
+            header, indexes = ToolParameters()[used_tool]
+
+            for line in reformat(args.input_file, header, indexes, used_tool):
+                csvw.writerow(line)
+        
 
