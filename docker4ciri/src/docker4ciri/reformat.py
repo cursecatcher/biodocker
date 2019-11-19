@@ -113,6 +113,9 @@ def reformat(filename, expected_header, indexes, tool):
 
         if expected_header is not None and actual_header != expected_header:
             sys.exit("The actual header does not match the expected one. Check if you have selected the right tool and/or input file.")
+        else: 
+            #there is no header - return to the beginning of file 
+            fi.seek(0, 0)
 
         for line in circsv:
             #extract fields from line 
