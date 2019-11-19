@@ -43,8 +43,8 @@ RUN tar xf bwa-0.7.17.tar.bz2 && \
     cd bwa-0.7.17 && \
     make && \
     cp bwa /usr/local/bin/
-#install mapsplice 
-COPY tools/MapSplice-v2.2.1.zip /tmp/
+#install mapsplice (anche no)
+#COPY tools/MapSplice-v2.2.1.zip /tmp/
 # RUN apt-get install -y unzip && \
 #     unzip MapSplice-v2.2.1.zip && \
 #     cd MapSplice-v2.2.1 && \
@@ -58,4 +58,14 @@ RUN tar xf segemehl-0.3.4.tar.gz && \
     export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/:$PKG_CONFIG_PATH && \
     make
 
-ENTRYPOINT [ "CIRCexplorer2" ]
+COPY tools/bowtie-1.2.3-linux-x86_64.zip tools/bowtie2-2.3.5.1-linux-x86_64.zip /tmp/
+RUN apt install -y unzip 
+RUN unzip bowtie2-2.3.5.1-linux-x86_64.zip && mv bowtie2-2.3.5.1-linux-x86_64/bowtie2* /usr/local/bin/ && rm -r bowtie2-2.3.5.1-linux-x86_64 
+RUN unzip bowtie-1.2.3-linux-x86_64.zip && mv bowtie-1.2.3-linux-x86_64/bowtie* /usr/local/bin && rm -r bowtie-1.2.3-linux-x86_64
+
+COPY src/circexplorer2.py /bin/
+
+#RUN tar xf /bin/bowtie-build.tar.gz 
+# && rm -f /bin/bowtie-build.tar.gz 
+
+ENTRYPOINT [ "/bin/circexplorer2.py" ]
