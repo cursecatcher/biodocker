@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import argparse
@@ -7,6 +7,7 @@ import os, os.path as path
 import circRNAannot
 import enum
 import traceback
+import urllib
 
 class AnnotationSources(enum.Enum):
     CIRCBASE = ("circbase", circRNAannot.CircBaseDB)
@@ -66,6 +67,8 @@ if __name__ == "__main__":
                 assembly = circRNAannot.AssemblyVersion.get_enum_value(assembly)
                 organism = circRNAannot.Organism.get_organism_by_assembly(assembly)
                 print("\033[01;31mCannot annotate from {} db: it is not available for {} organism.\033[00m".format(db_name, organism))
+            except urllib.error.HTTPError: 
+                print("Cannot download {} db because it is unreachable. Please try later.".format(db_name))
             except Exception as e:
                 print("Some very random event happened: {}".format(e)) #TODO - provvisorio, fix 
                 print("###########################")

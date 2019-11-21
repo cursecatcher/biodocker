@@ -9,6 +9,7 @@ import os
 import re
 import tarfile
 import urllib.request
+import ssl 
 from circutils import * 
 
 
@@ -242,15 +243,15 @@ class ExoRBaseDB(circrnaDB):
             for line in annotation_file: 
                 #example: chrY:13854443-13871798:+
                 tokens = ExoRBaseDB.split_circrna_id_regex.split(line[1])
-                chr, start, end = tokens[:3]
+                chrm, start, end = tokens[:3]
                 strand = line[1][-1]
                 other_fields = [line[0]] + line[2:]
 
-                chr, start, end, strand, flag = self.lifter.convert_coordinates(chr, start, end, strand)
+                chrm, start, end, strand, flag = self.lifter.convert_coordinates(chrm, start, end, strand)
                 start += 1 
 
-                if flag and circset.check_circ(chr, start, end, strand):
-                    circ = circRNA(chr, start, end, strand)
+                if flag and circset.check_circ(chrm, start, end, strand):
+                    circ = circRNA(chrm, start, end, strand)
                     self._annotations.append((circ, other_fields))              
         
         return self
@@ -264,38 +265,58 @@ class ExoRBaseDB(circrnaDB):
         return self 
 
 class CircRicDB(circrnaDB):
+    """Circular RNA in cancer DB"""
+
     def __init__(self, assembly):
         urls = {
             AssemblyVersion.HG38: (
+                #Circular RNA Expression
                 "https://hanlab.uth.edu/static/download/circRNA_expression.csv", 
+                #CircRNAs RNA binding proteins binding sites prediction
                 "https://hanlab.uth.edu/static/download/RBPs_circRNA.csv", 
+                #CircRNAs miRNA binding sites prediction
                 "https://hanlab.uth.edu/static/download/miRNA_circRNA.csv"
             )
         }
         super().__init__(urls, assembly)
     
     def annotate(self, circset):
+        #TODO -  inserire header, inserire fonte
+
         for path_db in self.path_db:
             with open(path_db) as f: 
-                csvf = csv.reader(f)
+                csvf = csv.reader(f, delimiter=",")
 
-                header = next(csvf, None)
+                _ = next(csvf, None)
 
                 for line in csvf: 
                     circ, first_field = line[0].split("|")
                     chrm, start, end = circ.split("_")
-                                       
                     
-                    for strand in ("+", "-"):
-                        _chrm, _start, _end, _strand, flag = self.lifter.convert_coordinates(chrm, start, end, strand)
-                    #    _start += 1
-                        if flag and circset.check_circ(_chrm, _start, _end, _strand):
-                            print("Triggered, strand={}".format(strand))
+                    if "chr" not in chrm.lower():
+                        chrm = "chr{}".format(chrm)
+                    
+                    _chrm, _start, _end, _strand, flag = self.lifter.convert_coordinates(chrm, start, end, "+")
+                    _start += 1
+                    if flag and circset.check_circ(_chrm, _start, _end, "+"):
+                        circ = circRNA(_chrm, _start, _end, _strand)
+                        self._annotations.append((circ, [first_field] + line[1:]))
+                    else:
+                        _chrm, _start, _end, _strand, flag = self.lifter.convert_coordinates(chrm, start, end, "-")
+                        _start += 1
+                        if flag and circset.check_circ(_chrm, _start, _end, "-"):
+                            circ = circRNA(_chrm, _start, _end, _strand)
+                            self._annotations.append((circ, [first_field] + line[1:]))
+                                    
 
 
         return self
     
     def download_db(self, output_folder):
+        #TO FIX SSL_ERROR
+        if not os.environ.get("PYTHONHTTPSVERIFY", "") and getattr(ssl, '_create_unverified_context', None):
+            ssl._create_default_https_context = ssl._create_unverified_context
+
         super(CircRicDB, self).download_db(output_folder)
         return self 
 

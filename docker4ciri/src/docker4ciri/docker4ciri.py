@@ -170,9 +170,10 @@ if __name__ == "__main__":
             "--in {}".format(Paths.cirifile.value),
             "--out {}".format(Paths.output_folder.value),
             "--scratch {}".format(my_scratch),
-            "--sources {}".format(" ".join(args.annotation_sources)),
             "--ref {}".format(args.assembly_version)
         ]
+        if args.annotation_sources is not None: 
+            command.append("--sources {}".format(" ".join(args.annotation_sources)))
 
     elif mode == Commands.structure.value:
         command = [
