@@ -145,7 +145,8 @@ if __name__ == "__main__":
             "--order {}".format(" ".join(args.cov_order)),
             "--mr {}".format(args.min_reads),
             "--mrep {}".format(args.min_replicates),
-            "--avg {}".format(args.min_average)
+            "--avg {}".format(args.min_average), 
+            "--file {}".format(args.used_tool)
         ]
 
     elif mode == Commands.merge_data.value:
