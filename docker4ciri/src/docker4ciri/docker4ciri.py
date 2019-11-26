@@ -26,7 +26,7 @@ class Scripts(enum.Enum):
     ciri_as = "/ciri2/CIRI_AS_v1.2.pl"
     ciri2 = "/ciri2/CIRI2.pl"
     annotation = "/ciri2/annotate_circrna.py"
-    ciri_merge = "/ciri2/merge_v2.py"
+    ciri_merge = "/ciri2/merge_results.py"
     data_merge = "/ciri2/deseq_merge.py"
     reformat = "/ciri2/reformat.py"
     overlap = "/ciri2/overlap.py"
@@ -82,6 +82,7 @@ if __name__ == "__main__":
     merge.add_argument("--mr", dest="min_reads", type=int, required=True)
     merge.add_argument("--mrep", dest="min_replicates", type=int, required=True)
     merge.add_argument("--avg", dest="min_average", type=int, required=True)
+    merge.add_argument("--tool", dest="used_tool", type=str, choices=["ciri2", "circexplorer2"], required=True)
 
     annotation = subparsers.add_parser(Commands.annotation.value)
     annotation.add_argument("-s", "--sources", dest="annotation_sources", nargs="*")

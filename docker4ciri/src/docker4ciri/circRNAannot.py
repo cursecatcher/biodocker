@@ -397,7 +397,7 @@ class Circ2DiseaseDB(circrnaDB):
                 except ValueError:
                     continue
                 strand = line[4]
-                other_fields = [line[0:2]] + line[5:]
+                other_fields = line[0:2] + line[5:]
 
                 chromo, start, end, strand, flag = self.lifter.convert_coordinates(chr, start, end, strand)
                 start += 1 
@@ -422,9 +422,9 @@ class CSCDDB(circrnaDB):
 
     def __init__(self, assembly):
         urls = {
-            AssemblyVersion.HG38: ("http://gb.whu.edu.cn/CSCD2/public/static/download/hg38-cancer-circrna.tar.gz",
-            "http://gb.whu.edu.cn/CSCD2/public/static/download/hg38-normal-circrna.tar.gz",
-            "http://gb.whu.edu.cn/CSCD2/public/static/download/hg38-common-circrna.tar.gz")
+            AssemblyVersion.HG38: ("http://gb.whu.edu.cn/IDCSC/public/static/download/hg38-cancer-circrna.tar.gz",
+            "http://gb.whu.edu.cn/IDCSC/public/static/download/hg38-normal-circrna.tar.gz",
+            "http://gb.whu.edu.cn/IDCSC/public/static/download/hg38-common-circrna.tar.gz")
         }
         super().__init__(urls, assembly)
  
@@ -447,14 +447,14 @@ class CSCDDB(circrnaDB):
                 for line in csv.reader(f, delimiter="\t"): 
                     chr, start, end = line[-3:]
                     strand = "+"
-                    other_fields = [line[0:-3]]
+                    other_fields = line[0:-3]
 
                     chr, start, end, strand, flag = self.lifter.convert_coordinates(chr, start, end, strand)
                     start += 1 
 
                     if flag and circset.check_circ(chr, start, end, strand):
                         circ = circRNA(chr, start, end, strand)
-                        self._annotations.append((circ, other_fields, cscd_version))              
+                        self._annotations.append((circ, other_fields + [cscd_version]))              
         
         return self
             

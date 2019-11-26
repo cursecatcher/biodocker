@@ -5,7 +5,6 @@ import csv
 import os 
 
 # This script calculates the overlap between two or more files containing circRNA data
-#TODO - continuare questa bellissima descrizione 
 
 def get_tool_from_filename(filename):
     """ Extract the name of the tool from the filename of the file produced by reformat script"""
@@ -44,19 +43,19 @@ if __name__ == "__main__":
                 circdict[mycirc].add(used_tool)
 
     #filter circRNAs detected by a sufficient number of tools 
-    with open(os.path.join(args.output_dir, "summary.txt"), "w") as summary,\
-         open(os.path.join(args.output_dir, "detected.txt"), "w") as detected:
+    with open(os.path.join(args.output_dir, "circRNA_detection.txt"), "w") as summary,\
+         open(os.path.join(args.output_dir, "circRNA_list.txt"), "w") as detected:
 
         sorted_tools = list(tools)
         print(sorted_tools)
         
-        #circ detectati da almeno t algoritmi -> summary.txt 
+        #for each circRNA, how many tools (and which) detect it (?)
         summary_csv = csv.writer(summary, delimiter="\t")
         summary_csv.writerow(["ID", "#detection"] + sorted_tools)
-        #per ogni circ, quali tool lo hanno detectato -> detected.txt 
+        #circRNA list detected at least by N tools 
         detected_csv = csv.writer(detected, delimiter="\t") #no header 
-
         rows = list() 
+
         for circ, tools in circdict.items():
             #keeping circRNAs detected at least by n tools (summary)
             if len(tools) >= args.min_support:

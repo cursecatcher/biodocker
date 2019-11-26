@@ -148,7 +148,7 @@ if __name__ == "__main__":
         current_file_path = os.path.join(args.input_path, current_file)
         filenamepath, extension = os.path.splitext(current_file_path)
         filename = os.path.basename(filenamepath)
-        output_file = os.path.join(args.output_path, "{}.{}.circrna".format(filename, args.used_tool))
+        output_file = os.path.join(args.output_path, "{}.{}.reformat".format(filename, args.used_tool))
 
         with open(output_file, "w") as fo: 
             csvw = csv.writer(fo, delimiter="\t")
@@ -158,19 +158,5 @@ if __name__ == "__main__":
                 csvw.writerow(line)
 
 
-
-
-
-    if False: 
-        filenamepath, extension = os.path.splitext(args.input_file)
-        filename = os.path.basename(filenamepath)
-        output_file = os.path.join(args.output_path, "{}.{}.circrna".format(filename, args.used_tool))
-
-        with open(output_file, "w") as fo: 
-            csvw = csv.writer(fo, delimiter="\t")
-            header, indexes = ToolParameters()[used_tool]
-
-            for line in reformat(args.input_file, header, indexes, used_tool):
-                csvw.writerow(line)
         
 
