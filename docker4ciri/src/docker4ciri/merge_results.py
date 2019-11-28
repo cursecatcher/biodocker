@@ -3,6 +3,7 @@
 import argparse
 import csv
 import os, sys
+from circutils import process_knife_line
 
 # This script merges 2+ CIRI2/CIRCexplorer2 output files. 
 # It produces the following output files: 
@@ -270,23 +271,54 @@ class set_circRNA(object):
                 crnawriter.writerow([chr, start, end, circ_name, strand])
 
 
-### The following two functions return a pair (circRNA_id, num_reads) where 
-# num_reads is the expression level of that circRNA 
-def process_ciri2_line(line):
-    chrm, start, end, num_reads = line[1:5]
-    if "chr" not in chrm.lower():
+
+class CircRNA_Arguments(object):
+    def __init__(self):
+        #(chrm, start, end, strand, #reads)
+        self.parameters = {
+            "ciri":     
+            (1, 2, 3, False, 4), 
+            "ciri2":    
+            (1, 2, 3, 10, 4),
+            "acfs":     
+            (0, 1, 2, 5, 4), 
+            "circexplorer":
+            (0, 1, 2, 5, 12), 
+            "circexplorer2":
+            (0, 1, 2, 5, 12), 
+            "circrnafinder":
+            (0, 1, 2, 5, 4), 
+            "dcc":
+            (0, 1, 2, 5, 3), 
+            "findcirc2":
+            (0, 1, 2, 5, 4), 
+            "knife":
+            (0, False, False, False, 1)
+        }
+    
+    def __getitem__(self, key):
+        if key in self.parameters:
+            return self.parameters[key]
+        return None 
+
+
+
+
+def process_tool_line(tool, fields, line):
+    """ Return a pair (circRNA_id, num_reads) where num_reads is the expression level of that circRNA """ 
+    chrm, start, end, strand, num_reads = [line[i] if i else None for i in fields]
+
+    if tool == "knife":
+        chrm, start, end, strand = process_knife_line(line[chrm])
+    elif tool == "ciri":
+        strand = "+"
+        
+    chrm = chrm.lower()
+    if "chr" not in chrm:
         chrm = "chr{}".format(chrm)
-    circ_id = "{}_{}_{}_{}".format(chrm.replace("_", "-"), start, end, line[10])
+
+    circ_id = "{}_{}_{}_{}".format(chrm.replace("_", "-"), start, end, strand)
     return circ_id, int(num_reads)
-
-
-def process_circexplorer2_line(line):
-    chrm, start, end = line[:3]
-    chrm = "chr{}".format(chrm)
-    expression = int(line[3].split("/")[1])
-    circ_id = "{}_{}_{}_{}".format(chrm.replace("_", "-"), start, end, line[-1])
-    return circ_id, expression
-
 
 
 
@@ -299,7 +331,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--samples", dest="samples", action="store", nargs="+", type=str, required=True)
     parser.add_argument("--cov", dest="covariates", action="store", nargs="+", type=str, required=True)
     parser.add_argument("--order", dest="order_by", action="store", nargs="+", type=str)
-    parser.add_argument("--file", dest="file_extension", action="store", type=str, choices=["ciri2", "circexplorer2"], required=True)
+    parser.add_argument("--file", dest="file_extension", action="store", type=str, choices=list(CircRNA_Arguments().parameters.keys()), required=True)
     #filter parameters
     parser.add_argument("--mr", dest="min_reads", action="store", type=int, default=0)
     parser.add_argument("--mrep", dest="min_replicates", action="store", type=int, default=0)
@@ -309,6 +341,8 @@ if __name__ == "__main__":
 
     if len(args.samples) != len(args.covariates):
         raise Exception("Error: samples and covariates lists must have the same length!")    
+
+    useful_indexes = CircRNA_Arguments()[args.file_extension]
 
     samples_obj = samples(args.samples, args.covariates, args.order_by)
     circRNAs = set_circRNA(samples_obj)
@@ -323,20 +357,30 @@ if __name__ == "__main__":
             circRNA_prediction_file = [
                 os.path.join(prefix, f) \
                 for f in os.listdir(prefix) \
-                if f.split(".")[-1].lower() == args.file_extension].pop()
-            
+                if f.split(".")[-1].lower() == args.file_extension]#.pop()
+
+            if len(circRNA_prediction_file) == 0:
+                print("Skipping {} sample because its extension does not match with '.{}'".format(sample_dir, args.file_extension))
+                continue
+
+            circRNA_prediction_file = circRNA_prediction_file.pop()
             print("Processing {}".format(circRNA_prediction_file))
 
             with open(circRNA_prediction_file) as fi: 
                 csvreader = csv.reader(fi, delimiter="\t")
-                function2process_line = process_circexplorer2_line
 
-                if args.file_extension == "ciri2":
-                    next(csvreader, None) #skip header 
-                    function2process_line = process_ciri2_line
+                #test header presence 
+                first_line = next(csvreader, None)
+                if first_line is not None: 
+                    #try to extract #num_reads and cast it to int
+                    try: 
+                        nreads = int(first_line[useful_indexes[-1]])
+                        fi.seek(0, 0) 
+                    except ValueError:
+                        pass  #header spotted 
 
                 for line in csvreader:
-                    circ_id, circ_exp = function2process_line(line)
+                    circ_id, circ_exp = process_tool_line(args.file_extension, useful_indexes, line)
                     circRNAs.add_circRNA(circ_id, sample_dir, circ_exp)
 
 

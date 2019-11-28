@@ -87,10 +87,7 @@ def process_line(line, indexes, tool):
     if tool == SupportedTool.KNIFE:
         #special case #1: all the info are in the same field 
         #e.g. : chr13|DNAJC3:96377506|DNAJC3:96375496|rev|+
-        index = indexes[0]
-        return tuple(
-            token if ":" not in token else token.split(":")[1]  
-            for i, token in enumerate(line[index].split("|")) if i != 3) #do not keep field #3 -> "rev" string 
+        return process_knife_line(line[indexes[0]])
 
     elif tool == SupportedTool.STARCHIP:
         #special case #2: chromosome info and start/end indexes are in the same field,

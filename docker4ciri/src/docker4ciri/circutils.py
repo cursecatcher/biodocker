@@ -110,3 +110,14 @@ class NoDatabaseException(Exception):
 class UnsupportedOrganism(Exception):
     def __init__(self, assembly):
         super().__init__("Unrecognized assembly: {}".format(assembly))
+
+
+
+def process_knife_line(id_field):
+    """ Return a 4-tuple containing (chrm, start, end, strand) """ 
+    # i.e. chr13|DNAJC3:96377506|DNAJC3:96375496|rev|+
+
+    return tuple(
+        token if ":" not in token else token.split(":")[1]
+        for i, token in enumerate(id_field.split("|")) if i != 3
+    )
