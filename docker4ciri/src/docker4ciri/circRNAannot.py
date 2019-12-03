@@ -399,7 +399,7 @@ class Circ2DiseaseDB(circrnaDB):
                 strand = line[4]
                 other_fields = line[0:2] + line[5:]
 
-                chromo, start, end, strand, flag = self.lifter.convert_coordinates(chr, start, end, strand)
+                chromo, start, end, strand, flag = self.lifter.convert_coordinates(chromo, start, end, strand)
                 start += 1 
 
                 if flag and circset.check_circ(chromo, start, end, strand):
