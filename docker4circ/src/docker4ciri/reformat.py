@@ -68,7 +68,7 @@ def check_chromosome(chr_value):
     chr_value = str(chr_value)#.lower()
 
     if "chr" not in chr_value:
-        chr_value = "chr" + chr_value
+        chr_value = f"chr{chr_value}"
     
     return chr_value
 

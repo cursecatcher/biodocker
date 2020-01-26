@@ -52,7 +52,7 @@ class Paths(enum.Enum):
 class OutputFiles(enum.Enum):
     ciri_merge = "merged_circRNA"
     data_merge = "MergedData.tsv"
-    ciri2_prediction = "prediction.ciri"
+    ciri2_prediction = "prediction.ciri2"
     ciri_as_prediction = "structure"
 #    annotation = "chiaro"
 
