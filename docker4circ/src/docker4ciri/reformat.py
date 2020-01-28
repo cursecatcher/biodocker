@@ -108,8 +108,9 @@ def reformat(filename, expected_header, indexes, tool):
         circsv = csv.reader(fi, delimiter="\t")   
         actual_header = next(circsv, None)
 
-        if expected_header is not None and actual_header != expected_header:
-            sys.exit("The actual header does not match the expected one. Check if you have selected the right tool and/or input file.")
+        if expected_header is not None:
+            if actual_header != expected_header:
+                sys.exit("The actual header does not match the expected one. Check if you have selected the right tool and/or input file.")
         else: 
             #there is no header - return to the beginning of file 
             fi.seek(0, 0)
@@ -140,19 +141,23 @@ if __name__ == "__main__":
         sys.exit("Seems that the tool {} is not supported yet.".format(args.used_tool))
 
     for current_file in os.listdir(args.input_path):
-        print("Reformatting {}".format(current_file))
+        print("Reformatting {}...".format(current_file), end="")
 
         current_file_path = os.path.join(args.input_path, current_file)
         filenamepath, extension = os.path.splitext(current_file_path)
         filename = os.path.basename(filenamepath)
-        output_file = os.path.join(args.output_path, "{}.{}.reformat".format(filename, args.used_tool))
+        if extension in SupportedTool: 
+            output_file = os.path.join(args.output_path, "{}.{}.reformat".format(filename, args.used_tool))
 
-        with open(output_file, "w") as fo: 
-            csvw = csv.writer(fo, delimiter="\t")
-            header, indexes = ToolParameters()[used_tool]
+            with open(output_file, "w") as fo: 
+                csvw = csv.writer(fo, delimiter="\t")
+                header, indexes = ToolParameters()[used_tool]
 
-            for line in reformat(current_file_path, header, indexes, used_tool):
-                csvw.writerow(line)
+                for line in reformat(current_file_path, header, indexes, used_tool):
+                    csvw.writerow(line)
+            print("Ok")
+        else: 
+            print("File skipped")
 
 
         
