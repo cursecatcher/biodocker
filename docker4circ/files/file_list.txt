@@ -1,0 +1,8 @@
+totale 54M
+-rw-r--r-- 1 nico nico  20M mag 10  2019 bedtools-2.27.1.tar.gz
+-rw-r--r-- 1 nico nico    0 gen 30 20:09 file_list.txt
+-rw-r--r-- 1 nico nico 1,2M mag 10  2019 htslib-1.9.tar.bz2
+-rw-r--r-- 1 nico nico 357K mag 10  2019 littler_0.3.5.tar.gz
+-rw-r--r-- 1 nico nico  29M mag 10  2019 R-3.5.1.tar.gz
+-rw-r--r-- 1 nico nico  117 mag 10  2019 Rprofile.site
+-rw-r--r-- 1 nico nico 4,3M mag 10  2019 samtools-1.9.tar.bz2
