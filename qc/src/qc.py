@@ -28,7 +28,7 @@ if __name__ == "__main__":
     parser_cut.add_argument("-rgxR1", dest="regexp_R1", type=str, required=True)
     #parse input/output options in order to ignore them ? 
 
-    args = parser.parse_known_args()
+    args, unknownargs = parser.parse_known_args()
 
     try:
         mode = sys.argv[1]
@@ -51,9 +51,10 @@ if __name__ == "__main__":
         subprocess.run(command, shell=True)
 
     elif mode == "cutadapt":
-        regexp = args[0].regexp_R1
+        regexp = args.regexp_R1
         r1_fastq = set(fastq_name for fastq_name in fastq_files if regexp in fastq_name)
         r2_fastq = fastq_files - r1_fastq
+
         #pairing mates 
         for fastq in r1_fastq:
             prefix_R1 =  get_samplename(fastq, regexp)
@@ -70,8 +71,8 @@ if __name__ == "__main__":
                 trimmed_r1 = os.path.join(KnownPaths.trimFolder.value, get_trimmed_name(fastq))
                 trimmed_r2 = os.path.join(KnownPaths.trimFolder.value, get_trimmed_name(mate))
 
-                cutadapt_args = " ".join(args[2:])
-
+                cutadapt_args = " ".join(unknownargs)
+                
                 os.makedirs(KnownPaths.trimFolder.value, exist_ok=True)
                 subprocess.run("chmod 777 {}".format(KnownPaths.trimFolder.value), shell=True)
 
