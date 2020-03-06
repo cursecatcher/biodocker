@@ -5,11 +5,15 @@ RUN apt install -y \
     python3 \
     python3-pip && \
     pip3 install multiqc 
+
+RUN pip3 install cutadapt 
+
 COPY pkgs/FastQC /opt/FastQC
-WORKDIR /opt/FastQC
-RUN chmod +x fastqc && \
+RUN chmod +x /opt/FastQC/fastqc && \
     ln -s /opt/FastQC/fastqc /usr/bin/fastqc 
-COPY start_qc.sh /usr/bin/
+COPY src/ /usr/bin/
 WORKDIR /
 
-ENTRYPOINT [ "start_qc.sh" ]
+#ENTRYPOINT [ "start_qc.sh" ]
+ENTRYPOINT [ "qc.py" ]
+CMD [ "-h" ]
