@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+from datetime import datetime 
 import enum 
 import os 
 import subprocess
@@ -9,6 +10,7 @@ class KnownPaths(enum.Enum):
     inputFolder = "/data"
     alignmentFolder = "/data/{}_alignments"
     referenceFolder = "/ref"
+    scratchFolder = "/scratch"
 
 class Sample(object):
     def __init__(self, samplename, r1, r2):
@@ -96,7 +98,30 @@ if __name__ == "__main__":
                 sample.r1_fastq, sample.r2_fastq, fasta, samfile, unknownargs_str
             )
             subprocess.run(current_command, shell=True)
+            
     elif mode == "bismark":
-        command = "bismark {} --bowtie2 --path_to_bowtie {} --genome {} --temp {} -1 {} -2 {} -o {}"
-    
+        if not os.path.exists(KnownPaths.scratchFolder.value):
+            sys.exit("Bismark requires a temporary folder to store temporary files.\nPlease mount a scratch folder in /scratch before run this docker.")
+
+        command = "bismark --bowtie2 --sam --genome_folder {} --temp {} -1 {} -2 {} --output_dir {} {}"
+        ref = KnownPaths.referenceFolder.value
+        flag = True 
+
+        while flag:
+            try:
+                temp_folder = os.path.join(
+                    KnownPaths.scratchFolder.value, 
+                    mode + "_" + datetime.now().strftime("%d_%m_%Y__%H_%M_%S")
+                )
+                os.makedirs(temp_folder)
+                flag = False 
+            except FileExistsError:
+                pass 
+
+        for sample in samples:
+            current_command = command.format(
+                ref, temp_folder, sample.r1_fastq, sample.r2_fastq, alignmentFolder, unknownargs_str
+            )
+            subprocess.run(current_command, shell=True)
+        
     subprocess.run("chmod -R 777 {}".format(alignmentFolder), shell=True)
