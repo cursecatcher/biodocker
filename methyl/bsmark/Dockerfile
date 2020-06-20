@@ -33,5 +33,9 @@ WORKDIR /
 RUN yum install -y python3 
 COPY src/ /usr/bin/
 
-ENTRYPOINT [ "bsmark.py" ]
-CMD [ "-h" ]
+RUN mkdir /data
+WORKDIR /data
+
+ENTRYPOINT [ "entrypoint.py" ]
+#ENTRYPOINT [ "bsmark.py" ]
+#CMD [ "-h" ]

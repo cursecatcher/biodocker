@@ -7,8 +7,7 @@ export LANG=C.UTF-8
 ifolder="/data"
 ofolder="${ifolder}/quality_control"
 
-#check $ofolder existence?
-
+#todo - check $ofolder existence?
 mkdir -p ${ofolder}
 
 echo "Starting FastQC with the following options: $*"

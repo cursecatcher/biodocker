@@ -2,11 +2,10 @@ FROM piegsaj/oracle-jre:1.8.0_172-b11
 
 RUN apt update && apt upgrade -y 
 RUN apt install -y \
+    pigz \
     python3 \
     python3-pip && \
-    pip3 install multiqc 
-
-RUN pip3 install cutadapt 
+    pip3 install multiqc cutadapt
 
 COPY pkgs/FastQC /opt/FastQC
 RUN chmod +x /opt/FastQC/fastqc && \

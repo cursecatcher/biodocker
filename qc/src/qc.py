@@ -80,5 +80,6 @@ if __name__ == "__main__":
                 print("Running the following command: {}".format(command), flush=True)
                 subprocess.run(command, shell=True)
             
-
-    
+                #todo - perform fastqc + multiqc 
+    else:
+        parser.print_help()

@@ -103,7 +103,7 @@ if __name__ == "__main__":
         if not os.path.exists(KnownPaths.scratchFolder.value):
             sys.exit("Bismark requires a temporary folder to store temporary files.\nPlease mount a scratch folder in /scratch before run this docker.")
 
-        command = "bismark --bowtie2 --sam --genome_folder {} --temp {} -1 {} -2 {} --output_dir {} {}"
+        command = "bismark --bowtie2 --genome_folder {} --temp {} -1 {} -2 {} --output_dir {} {}"
         ref = KnownPaths.referenceFolder.value
         flag = True 
 
