@@ -39,12 +39,12 @@ if __name__ == "__main__":
             bam_file = a_file.replace(".sam", ".bam") if a_file.endswith(".sam") else a_file
             sorted_file = "sorted_{}".format(bam_file)
 
-            print("Sorting {} in temporary file {}...".format(a_file, sorted_file))
+            print("Sorting {} in temporary file {}...".format(a_file, sorted_file), flush=True)
             command = "samtools sort -n {} > {}".format(a_file, sorted_file)
             ret_code = subprocess.run(command, shell=True, check=True)
 
             if ret_code.returncode != 0:
-                print("Something gone wrong during sorting of {}".format(a_file))
+                print("Something gone wrong during sorting of {}".format(a_file), flush=True)
                 continue
 
             sorted_bams.append(sorted_file)
@@ -54,14 +54,14 @@ if __name__ == "__main__":
             options = " ".join(options)
             command = "deduplicate_bismark {} {}".format(options, bam_files)
 
-            print("Launching the following command: {}".format(command))
+            print("Launching the following command: {}".format(command), flush=True)
             subprocess.run(command, check=True, shell=True)
         else:
-            print("No sorted BAM found in the current directory")
+            print("No sorted BAM found in the current directory", flush=True)
 
     
     else:
         command = " ".join(sys.argv[1:])
-        print("Launching command {}".format(command))
+        print("Launching command {}".format(command), flush=True)
         subprocess.run(command, check=True, shell=True)
     
