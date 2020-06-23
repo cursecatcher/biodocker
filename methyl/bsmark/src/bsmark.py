@@ -62,8 +62,7 @@ if __name__ == "__main__":
         mate = None 
         try:
             mate = [e for e in r2_files if prefix_R1 in e][0]
-            print("Found mate of {} -> {}".format(fastq, mate))
-            print(get_trimmed_name(mate))
+            print("Found mate of {} -> {}\nProducing output file {}".format(fastq, mate, get_trimmed_name(mate)), flush=True)
         except IndexError:
             print("Cannot find a mate for {} file".format(fastq), flush=True)
         if mate is not None: 

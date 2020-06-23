@@ -21,7 +21,7 @@ if __name__ == "__main__":
     if my_tool in [tool.value for tool in Tools]:
         command_line_args = " ".join(sys.argv[1:])
         command = "python3 /usr/bin/bsmark.py {}".format(command_line_args)
-        print("Running aligment with command: {}".format(command))
+        print("Running aligment with command: {}".format(command), flush=True)
         subprocess.call(command, shell=True)
         sys.exit(0)
     
